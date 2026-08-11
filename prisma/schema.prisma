@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Tier {
+  Bronze
+  Silver
+  Gold
+}
+
+enum ChannelStatus {
+  Active
+  OnHold
+  Churned
+}
+
+enum CustomerHealth {
+  Healthy
+  NeedsAttention
+  Critical
+}
+
+enum CustomerStatus {
+  Active
+  Renewed
+  AtRisk
+  Churned
+}
+
+enum ActivityCategory {
+  channel_account
+  customer
+  deliverable
+  user
+  permission_change
+  export
+}
+
+model User {
+  id                     String    @id @default(cuid())
+  name                   String
+  email                  String    @unique
+  passwordHash           String
+  role                   String
+  dashboard              Boolean   @default(false)
+  prospects              Boolean   @default(false)
+  partners               Boolean   @default(false)
+  customers              Boolean   @default(false)
+  deliverables           Boolean   @default(false)
+  access                 Boolean   @default(false)
+  mustChangePassword     Boolean   @default(false)
+  tempPasswordExpiresAt  DateTime?
+  failedLoginAttempts    Int       @default(0)
+  lockUntil              DateTime?
+  mfaEnabled             Boolean   @default(false)
+  mfaSecret              String?   @db.Text
+  mfaRecoveryCodeHashes  Json?
+  createdAt              DateTime  @default(now())
+  lastLoginAt            DateTime?
+
+  sessions               Session[]
+  mfaChallenges          MfaChallenge[]
+  ownedChannelAccounts   ChannelAccount[] @relation("ChannelAccountOwner")
+  ownedCustomers         Customer[]       @relation("CustomerCsmOwner")
+  ownedDeliverables      Deliverable[]    @relation("DeliverableOwner")
+  uploadedDocuments      Document[]       @relation("DocumentUploadedBy")
+
+  @@index([email])
+}
+
+model Session {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  tokenHash  String    @unique
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  ipAddress  String?
+  userAgent  String?
+
+  @@index([userId])
+}
+
+// Short-lived record bridging "password verified" and "TOTP verified" during login.
+// Bridges the gap between "password verified" and "full session issued" while a user still
+// has to change their password and/or complete MFA enrollment/verification. Holding this
+// token proves identity was checked once; it cannot be used to call any protected API.
+model MfaChallenge {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  tokenHash         String    @unique
+  pendingMfaSecret  String?   @db.Text
+  expiresAt         DateTime
+  createdAt         DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model ChannelAccount {
+  id                     String        @id @default(cuid())
+  company                String
+  primaryContact         String
+  email                  String
+  region                 String
+  focusArea              String
+  ownerId                String
+  owner                  User          @relation("ChannelAccountOwner", fields: [ownerId], references: [id])
+  tier                   Tier
+  status                 ChannelStatus
+  phase                  Int           @default(1)
+  checklistState         Json
+  requestDate            DateTime
+  satisfaction           Int?
+  opportunitiesGenerated Int?
+  notes                  String?       @db.Text
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  documents              Document[]
+
+  @@index([ownerId])
+  @@index([phase])
+}
+
+model Customer {
+  id           String         @id @default(cuid())
+  company      String
+  primaryContact String
+  email        String
+  plan         String
+  csmOwnerId   String
+  csmOwner     User           @relation("CustomerCsmOwner", fields: [csmOwnerId], references: [id])
+  health       CustomerHealth
+  status       CustomerStatus
+  renewalDate  DateTime
+  notes        String?        @db.Text
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  documents    Document[]
+
+  @@index([csmOwnerId])
+}
+
+model Deliverable {
+  id         String            @id @default(cuid())
+  name       String
+  description String           @db.Text
+  ownerId    String
+  owner      User              @relation("DeliverableOwner", fields: [ownerId], references: [id])
+  link       String
+  createdAt  DateTime          @default(now())
+
+  tasks      DeliverableTask[]
+}
+
+model DeliverableTask {
+  id            String       @id @default(cuid())
+  deliverableId String
+  deliverable   Deliverable  @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  label         String
+  orderIndex    Int
+  done          Boolean      @default(false)
+  completedAt   DateTime?
+  completedById String?
+
+  @@index([deliverableId])
+}
+
+model Document {
+  id               String          @id @default(cuid())
+  name             String
+  storageKey       String          @unique
+  mimeType         String
+  sizeBytes        Int
+  channelAccountId String?
+  channelAccount   ChannelAccount? @relation(fields: [channelAccountId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  customerId       String?
+  customer         Customer?       @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  uploadedById     String
+  uploadedBy       User            @relation("DocumentUploadedBy", fields: [uploadedById], references: [id])
+  uploadedAt       DateTime        @default(now())
+
+  @@index([channelAccountId])
+  @@index([customerId])
+}
+
+model ActivityLogEntry {
+  id          String           @id @default(cuid())
+  actorUserId String?
+  actorName   String
+  category    ActivityCategory
+  message     String
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+
+  @@index([createdAt])
+}
