@@ -3,10 +3,9 @@ import { prisma } from "@/lib/db/prisma";
 import { decryptNullable } from "@/lib/crypto/fieldCrypto";
 
 export async function exportAllData() {
-  const [channelAccounts, customers, deliverables, users] = await Promise.all([
+  const [channelAccounts, customers, users] = await Promise.all([
     prisma.channelAccount.findMany({ include: { owner: { select: { name: true, email: true } } } }),
     prisma.customer.findMany({ include: { csmOwner: { select: { name: true, email: true } } } }),
-    prisma.deliverable.findMany({ include: { tasks: true, owner: { select: { name: true, email: true } } } }),
     prisma.user.findMany({
       select: {
         id: true,
@@ -17,7 +16,6 @@ export async function exportAllData() {
         prospects: true,
         partners: true,
         customers: true,
-        deliverables: true,
         access: true,
         createdAt: true,
         lastLoginAt: true,
@@ -28,7 +26,6 @@ export async function exportAllData() {
   return {
     channelAccounts: channelAccounts.map((a) => ({ ...a, notes: decryptNullable(a.notes) })),
     customers: customers.map((c) => ({ ...c, notes: decryptNullable(c.notes) })),
-    deliverables,
     users,
     exportedAt: new Date().toISOString(),
   };
@@ -87,17 +84,6 @@ export async function exportAllDataAsCsv(): Promise<string> {
       }))
     ),
     "",
-    "# Deliverables",
-    toCsv(
-      data.deliverables.map((d) => ({
-        id: d.id,
-        name: d.name,
-        owner: d.owner.name,
-        tasksDone: d.tasks.filter((t) => t.done).length,
-        tasksTotal: d.tasks.length,
-      }))
-    ),
-    "",
     "# Users",
     toCsv(
       data.users.map((u) => ({
@@ -109,7 +95,6 @@ export async function exportAllDataAsCsv(): Promise<string> {
         prospects: u.prospects,
         partners: u.partners,
         customers: u.customers,
-        deliverables: u.deliverables,
         access: u.access,
       }))
     ),

@@ -1,12 +1,23 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/authz/guard";
 import { UserCreateSchema } from "@/lib/validation/user";
-import { listUsers, createUser } from "@/lib/services/user.service";
+import { listUsers, createUser, type UserSortKey } from "@/lib/services/user.service";
 import { prisma } from "@/lib/db/prisma";
 
-export const GET = withAuth("access", async () => {
-  const users = await listUsers();
-  return NextResponse.json({ data: users });
+const SORT_KEYS: UserSortKey[] = ["name", "email", "role"];
+
+export const GET = withAuth("access", async (req) => {
+  const url = new URL(req.url);
+  const page = Number(url.searchParams.get("page") ?? "");
+  const pageSize = Number(url.searchParams.get("pageSize") ?? "");
+  const sortKeyParam = url.searchParams.get("sortKey");
+  const { rows, total } = await listUsers({
+    page: Number.isFinite(page) && page > 0 ? page : undefined,
+    pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : undefined,
+    sortKey: SORT_KEYS.includes(sortKeyParam as UserSortKey) ? (sortKeyParam as UserSortKey) : undefined,
+    sortDir: url.searchParams.get("sortDir") === "desc" ? "desc" : "asc",
+  });
+  return NextResponse.json({ data: rows, total });
 });
 
 export const POST = withAuth("access", async (req, _ctx, session) => {

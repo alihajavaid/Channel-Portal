@@ -27,7 +27,7 @@ export function AccountsByPhaseChart({ data }: Props) {
   const gridSteps = [0, niceMax / 4, niceMax / 2, (niceMax * 3) / 4, niceMax];
 
   return (
-    <div className="viz-root relative rounded-md border border-slate-200 bg-white p-4">
+    <div className="viz-root relative rounded-md border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <style>{`
         .viz-root {
           color-scheme: light;
@@ -38,18 +38,7 @@ export function AccountsByPhaseChart({ data }: Props) {
           --baseline: #c3c2b7;
           --series-1: #2a78d6;
         }
-        @media (prefers-color-scheme: dark) {
-          :root:not([data-theme="light"]) .viz-root {
-            color-scheme: dark;
-            --surface-1: #1a1a19;
-            --text-secondary: #c3c2b7;
-            --muted: #898781;
-            --gridline: #2c2c2a;
-            --baseline: #383835;
-            --series-1: #3987e5;
-          }
-        }
-        :root[data-theme="dark"] .viz-root {
+        .dark .viz-root {
           color-scheme: dark;
           --surface-1: #1a1a19;
           --text-secondary: #c3c2b7;
@@ -109,7 +98,7 @@ export function AccountsByPhaseChart({ data }: Props) {
                 {d.phase}
               </text>
               <title>
-                {phaseDef ? `${phaseDef.phase}. ${phaseDef.name}` : `Phase ${d.phase}`}: {d.count} accounts
+                {`${phaseDef ? `${phaseDef.phase}. ${phaseDef.name}` : `Phase ${d.phase}`}: ${d.count} accounts`}
               </title>
             </g>
           );
@@ -117,7 +106,7 @@ export function AccountsByPhaseChart({ data }: Props) {
       </svg>
       {hover && (
         <div
-          className="pointer-events-none absolute rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow"
+          className="pointer-events-none absolute rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow dark:bg-slate-700"
           style={{ left: hover.x, top: hover.y - 8, transform: "translate(-50%, -100%)" }}
         >
           {PHASES.find((p) => p.phase === hover.phase)?.name}: {hover.count}

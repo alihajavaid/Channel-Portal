@@ -3,7 +3,6 @@ import argon2 from "argon2";
 import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { allPermissions } from "@/lib/constants/modules";
-import { DELIVERABLES } from "@/lib/constants/deliverableSeed";
 import { emptyChecklistState } from "@/lib/constants/phaseChecklists";
 
 // This script runs standalone via `tsx`, outside Next.js's bundler, so it can't import
@@ -38,26 +37,6 @@ async function main() {
     },
   });
   console.log(`Bootstrap admin ready: ${admin.email}`);
-
-  const existingDeliverables = await prisma.deliverable.count();
-  if (existingDeliverables === 0) {
-    for (const d of DELIVERABLES) {
-      await prisma.deliverable.create({
-        data: {
-          name: d.name,
-          description: d.description,
-          link: d.link,
-          ownerId: admin.id,
-          tasks: {
-            create: d.tasks.map((label, i) => ({ label, orderIndex: i })),
-          },
-        },
-      });
-    }
-    console.log(`Seeded ${DELIVERABLES.length} deliverables.`);
-  } else {
-    console.log("Deliverables already seeded, skipping.");
-  }
 
   const existingAccounts = await prisma.channelAccount.count();
   if (existingAccounts === 0) {

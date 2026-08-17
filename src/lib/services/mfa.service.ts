@@ -12,12 +12,23 @@ import {
 } from "@/lib/auth/totp";
 import { computeLockAfterFailure, resetLockoutFields, isLocked } from "@/lib/auth/lockout";
 import { createSession } from "@/lib/auth/session";
+import { verifyPassword } from "@/lib/auth/password";
+import { logActivity } from "@/lib/services/activity.service";
 import {
   getAuthBridgeUser,
   setBridgePendingSecret,
   getBridgePendingSecret,
   consumeAuthBridge,
 } from "@/lib/auth/authBridge";
+import { InvalidCurrentPasswordError } from "@/lib/services/user.service";
+
+export { InvalidCurrentPasswordError };
+
+export class MfaNotEnabledError extends Error {
+  constructor() {
+    super("MFA is not enabled on this account");
+  }
+}
 
 export type MfaEnrollStart = { qrDataUrl: string; manualEntryKey: string };
 
@@ -105,4 +116,30 @@ export async function verifyMfaChallenge(code: string): Promise<MfaVerifyResult>
     return { status: "locked", retryAt: update.lockUntil };
   }
   return { status: "invalid" };
+}
+
+// Self-service: lets a user who still has their password (but may have lost their recovery
+// codes) rotate to a fresh set. Requires re-proving the current password since these codes
+// are a full authentication bypass for the account.
+export async function regenerateRecoveryCodes(userId: string, currentPassword: string): Promise<string[]> {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  if (!user.mfaEnabled) throw new MfaNotEnabledError();
+
+  const valid = await verifyPassword(user.passwordHash, currentPassword);
+  if (!valid) throw new InvalidCurrentPasswordError();
+
+  const recoveryCodes = generateRecoveryCodes();
+  const recoveryCodeHashes = await hashRecoveryCodes(recoveryCodes);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: userId }, data: { mfaRecoveryCodeHashes: recoveryCodeHashes } });
+    await logActivity(tx, {
+      actor: { id: userId, name: user.name },
+      category: "user",
+      message: `${user.name} regenerated their MFA recovery codes`,
+      metadata: { userId },
+    });
+  });
+
+  return recoveryCodes;
 }

@@ -48,19 +48,19 @@ export default function MfaEnrollPage() {
   if (recoveryCodes) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-semibold text-slate-900">Save your recovery codes</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Save your recovery codes</h1>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           Each code can be used once to sign in if you lose access to your authenticator app.
           They will not be shown again.
         </p>
-        <ul className="grid grid-cols-2 gap-2 rounded-md bg-slate-50 p-3 font-mono text-sm">
+        <ul className="grid grid-cols-2 gap-2 rounded-md bg-slate-50 p-3 font-mono text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100">
           {recoveryCodes.map((c) => (
             <li key={c}>{c}</li>
           ))}
         </ul>
         <button
           onClick={() => router.push("/dashboard")}
-          className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white"
+          className="w-full rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand/90"
         >
           I've saved these codes — continue
         </button>
@@ -70,24 +70,24 @@ export default function MfaEnrollPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Set up two-factor authentication</h1>
-      <p className="text-sm text-slate-600">
+      <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Set up two-factor authentication</h1>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
         Admin accounts require an authenticator app. Scan the QR code below, or enter the key
         manually, then enter the 6-digit code it generates.
       </p>
       {qrDataUrl && (
         // Server-generated data: URI for a TOTP enrollment QR code, not user content.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={qrDataUrl} alt="TOTP enrollment QR code" className="mx-auto h-40 w-40" />
+        <img src={qrDataUrl} alt="TOTP enrollment QR code" className="mx-auto h-40 w-40 rounded-md bg-white p-1" />
       )}
       {manualEntryKey && (
-        <p className="break-all rounded-md bg-slate-50 p-2 text-center font-mono text-xs">
+        <p className="break-all rounded-md bg-slate-50 p-2 text-center font-mono text-xs text-slate-900 dark:bg-slate-800 dark:text-slate-100">
           {manualEntryKey}
         </p>
       )}
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
-          <label htmlFor="code" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="code" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
             6-digit code
           </label>
           <input
@@ -98,14 +98,14 @@ export default function MfaEnrollPage() {
             required
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-center text-lg tracking-widest"
+            className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-center text-lg tracking-widest text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
           />
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="w-full rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand/90 disabled:opacity-50"
         >
           {pending ? "Verifying…" : "Confirm"}
         </button>

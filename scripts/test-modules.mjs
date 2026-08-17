@@ -121,14 +121,6 @@ async function main() {
   r = await admin.call(`/api/customers/${customerId}`, { method: "PATCH", body: JSON.stringify({ health: "Critical" }) });
   assert(r.status === 200 && r.data.data.health === "Critical", "customer health update succeeds");
 
-  console.log("== Deliverables ==");
-  r = await admin.call("/api/deliverables");
-  assert(r.status === 200 && r.data.data.length === 10, "10 deliverables seeded");
-  const deliverable = r.data.data[0];
-  const task = deliverable.tasks[0];
-  r = await admin.call(`/api/deliverables/${deliverable.id}/tasks/${task.id}`, { method: "POST", body: JSON.stringify({ done: true }) });
-  assert(r.status === 200 && r.data.data.done === true, "deliverable task toggle succeeds");
-
   console.log("== CSRF enforcement ==");
   r = await admin.call(`/api/customers/${customerId}`, { method: "PATCH", body: JSON.stringify({ health: "Healthy" }), csrf: false });
   assert(r.status === 403 && r.data.error === "csrf", "mutating request without CSRF header is rejected");
@@ -144,7 +136,6 @@ async function main() {
       prospects: true,
       partners: false,
       customers: false,
-      deliverables: false,
       access: false,
     }),
   });

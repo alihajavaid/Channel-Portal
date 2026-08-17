@@ -13,7 +13,10 @@ export function SignOutButton() {
   }
 
   return (
-    <button onClick={onClick} className="text-sm text-slate-600 hover:text-slate-900">
+    <button
+      onClick={onClick}
+      className="ml-3 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+    >
       Sign out
     </button>
   );

@@ -2,8 +2,8 @@ import "server-only";
 import { prisma } from "@/lib/db/prisma";
 import { logActivity } from "@/lib/services/activity.service";
 import { assertNotLastAdmin, LastAdminError } from "@/lib/authz/adminInvariant";
-import { hashPassword, generateRandomSecret } from "@/lib/auth/password";
-import { revokeAllSessionsForUser } from "@/lib/auth/session";
+import { hashPassword, verifyPassword, generateRandomSecret } from "@/lib/auth/password";
+import { revokeAllSessionsForUser, revokeOtherSessions } from "@/lib/auth/session";
 import { sendEmail, EmailNotConfiguredError, EmailSendError } from "@/lib/email/resend";
 import { CredentialsEmail } from "@/lib/email/templates/CredentialsEmail";
 import { MODULE_KEYS, type Permissions } from "@/lib/constants/modules";
@@ -14,30 +14,74 @@ type Actor = { id: string; name: string };
 
 export class UserHasOwnedRecordsError extends Error {
   constructor() {
-    super("This user still owns records (prospects, partners, customers, or deliverables) — reassign them first");
+    super("This user still owns records (prospects, partners, or customers) — reassign them first");
   }
 }
 
-export async function listUsers() {
-  return prisma.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      dashboard: true,
-      prospects: true,
-      partners: true,
-      customers: true,
-      deliverables: true,
-      access: true,
-      mfaEnabled: true,
-      mustChangePassword: true,
-      createdAt: true,
-      lastLoginAt: true,
-    },
-    orderBy: { name: "asc" },
+export class InvalidCurrentPasswordError extends Error {
+  constructor() {
+    super("Current password is incorrect");
+  }
+}
+
+// Self-service password change, distinct from the forced-reset flow in auth.service.ts:
+// this requires proving the *current* password (the forced flow instead relies on a
+// short-lived auth bridge established right after login) and keeps the current session
+// alive while revoking every other one, since the user is already mid-session here.
+export async function changeOwnPassword(
+  userId: string,
+  currentSessionId: string,
+  currentPassword: string,
+  newPassword: string
+) {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  const valid = await verifyPassword(user.passwordHash, currentPassword);
+  if (!valid) throw new InvalidCurrentPasswordError();
+
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: userId }, data: { passwordHash } });
+    await logActivity(tx, {
+      actor: { id: userId, name: user.name },
+      category: "user",
+      message: `${user.name} changed their own password`,
+      metadata: { userId },
+    });
   });
+  await revokeOtherSessions(userId, currentSessionId);
+}
+
+export type UserSortKey = "name" | "email" | "role";
+
+export async function listUsers(
+  filter: { page?: number; pageSize?: number; sortKey?: UserSortKey; sortDir?: "asc" | "desc" } = {}
+) {
+  const select = {
+    id: true,
+    name: true,
+    email: true,
+    role: true,
+    dashboard: true,
+    prospects: true,
+    partners: true,
+    customers: true,
+    access: true,
+    mfaEnabled: true,
+    mustChangePassword: true,
+    createdAt: true,
+    lastLoginAt: true,
+  } as const;
+
+  const paginate = filter.page !== undefined && filter.pageSize !== undefined;
+  const [rows, total] = await Promise.all([
+    prisma.user.findMany({
+      select,
+      orderBy: { [filter.sortKey ?? "name"]: filter.sortDir ?? "asc" },
+      ...(paginate ? { skip: (filter.page! - 1) * filter.pageSize!, take: filter.pageSize } : {}),
+    }),
+    paginate ? prisma.user.count() : Promise.resolve(undefined),
+  ]);
+  return { rows, total: total ?? rows.length };
 }
 
 export type UserCreateInput = { name: string; email: string; role: string } & Permissions;
@@ -61,7 +105,6 @@ export async function createUser(input: UserCreateInput, actor: Actor) {
         prospects: input.prospects,
         partners: input.partners,
         customers: input.customers,
-        deliverables: input.deliverables,
         access: input.access,
       },
     });

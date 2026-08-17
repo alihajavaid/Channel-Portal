@@ -47,9 +47,6 @@ async function main() {
   r = await limited.call("/api/customers");
   assert(r.status === 403, "limited user (customers=false) hitting customers API -> 403");
 
-  r = await limited.call("/api/deliverables");
-  assert(r.status === 403, "limited user (deliverables=false) hitting deliverables API -> 403");
-
   r = await limited.call("/api/users");
   assert(r.status === 403, "limited user (access=false) hitting users admin API -> 403");
 

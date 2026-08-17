@@ -91,6 +91,15 @@ export async function revokeAllSessionsForUser(userId: string) {
   });
 }
 
+// Used by self-service password change: kill every other session but let the device the
+// user is currently changing their password from stay signed in.
+export async function revokeOtherSessions(userId: string, keepSessionId: string) {
+  await prisma.session.updateMany({
+    where: { userId, revokedAt: null, id: { not: keepSessionId } },
+    data: { revokedAt: new Date() },
+  });
+}
+
 // Read-only: validates the session cookie against the DB. Never writes cookies, so this is
 // safe to call from Server Components/pages (Next.js forbids cookie writes there). Returns
 // null for anything invalid/expired/revoked rather than throwing — callers decide whether

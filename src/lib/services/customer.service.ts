@@ -10,25 +10,48 @@ function withDecryptedNotes<T extends { notes: string | null }>(record: T): T {
   return { ...record, notes: decryptNullable(record.notes) };
 }
 
-export async function listCustomers(filter: { search?: string; status?: CustomerStatus; health?: CustomerHealth }) {
-  const rows = await prisma.customer.findMany({
-    where: {
-      status: filter.status,
-      health: filter.health,
-      ...(filter.search
-        ? {
-            OR: [
-              { company: { contains: filter.search } },
-              { primaryContact: { contains: filter.search } },
-              { email: { contains: filter.search } },
-            ],
-          }
-        : {}),
-    },
-    include: { csmOwner: { select: { id: true, name: true } } },
-    orderBy: { updatedAt: "desc" },
-  });
-  return rows.map(withDecryptedNotes);
+export type CustomerSortKey = "company" | "plan" | "health" | "status" | "renewalDate" | "csmOwner";
+
+function customerOrderBy(sortKey?: CustomerSortKey, sortDir: "asc" | "desc" = "asc") {
+  if (!sortKey) return { updatedAt: "desc" as const };
+  if (sortKey === "csmOwner") return { csmOwner: { name: sortDir } };
+  return { [sortKey]: sortDir };
+}
+
+export async function listCustomers(filter: {
+  search?: string;
+  status?: CustomerStatus;
+  health?: CustomerHealth;
+  page?: number;
+  pageSize?: number;
+  sortKey?: CustomerSortKey;
+  sortDir?: "asc" | "desc";
+}) {
+  const where = {
+    status: filter.status,
+    health: filter.health,
+    ...(filter.search
+      ? {
+          OR: [
+            { company: { contains: filter.search } },
+            { primaryContact: { contains: filter.search } },
+            { email: { contains: filter.search } },
+          ],
+        }
+      : {}),
+  };
+
+  const paginate = filter.page !== undefined && filter.pageSize !== undefined;
+  const [rows, total] = await Promise.all([
+    prisma.customer.findMany({
+      where,
+      include: { csmOwner: { select: { id: true, name: true } } },
+      orderBy: customerOrderBy(filter.sortKey, filter.sortDir),
+      ...(paginate ? { skip: (filter.page! - 1) * filter.pageSize!, take: filter.pageSize } : {}),
+    }),
+    paginate ? prisma.customer.count({ where }) : Promise.resolve(undefined),
+  ]);
+  return { rows: rows.map(withDecryptedNotes), total: total ?? rows.length };
 }
 
 export async function getCustomer(id: string) {

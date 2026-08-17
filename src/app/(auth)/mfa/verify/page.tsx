@@ -35,12 +35,12 @@ export default function MfaVerifyPage() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Two-factor verification</h1>
-      <p className="text-sm text-slate-600">
+      <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Two-factor verification</h1>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
         Enter the 6-digit code from your authenticator app, or one of your recovery codes.
       </p>
       <div>
-        <label htmlFor="code" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="code" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
           Code
         </label>
         <input
@@ -48,14 +48,14 @@ export default function MfaVerifyPage() {
           required
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-center text-lg tracking-widest"
+          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-center text-lg tracking-widest text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
         />
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="w-full rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand/90 disabled:opacity-50"
       >
         {pending ? "Verifying…" : "Verify"}
       </button>

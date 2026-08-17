@@ -23,3 +23,12 @@ export const TotpCodeSchema = z.object({
 export const MfaVerifySchema = z.object({
   code: z.string().min(6),
 });
+
+export const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: NewPasswordSchema,
+});
+
+export const RegenerateRecoveryCodesSchema = z.object({
+  currentPassword: z.string().min(1),
+});

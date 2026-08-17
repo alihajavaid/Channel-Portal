@@ -3,7 +3,6 @@ export const MODULE_KEYS = [
   "prospects",
   "partners",
   "customers",
-  "deliverables",
   "access",
 ] as const;
 
@@ -17,7 +16,6 @@ export function noPermissions(): Permissions {
     prospects: false,
     partners: false,
     customers: false,
-    deliverables: false,
     access: false,
   };
 }
@@ -28,7 +26,6 @@ export function allPermissions(): Permissions {
     prospects: true,
     partners: true,
     customers: true,
-    deliverables: true,
     access: true,
   };
 }

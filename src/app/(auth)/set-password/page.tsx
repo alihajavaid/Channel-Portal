@@ -48,12 +48,12 @@ export default function SetPasswordPage() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Set a new password</h1>
-      <p className="text-sm text-slate-600">
+      <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Set a new password</h1>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
         Your account requires a new password before continuing.
       </p>
       <div>
-        <label htmlFor="newPassword" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="newPassword" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
           New password
         </label>
         <input
@@ -63,11 +63,11 @@ export default function SetPasswordPage() {
           autoComplete="new-password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
         />
       </div>
       <div>
-        <label htmlFor="confirm" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="confirm" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
           Confirm password
         </label>
         <input
@@ -77,17 +77,17 @@ export default function SetPasswordPage() {
           autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
         />
       </div>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-slate-500 dark:text-slate-400">
         At least 8 characters, with a letter, a number, and a special character.
       </p>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="w-full rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand/90 disabled:opacity-50"
       >
         {pending ? "Saving…" : "Set password"}
       </button>

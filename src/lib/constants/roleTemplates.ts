@@ -18,7 +18,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
   {
     key: "channel",
     label: "Channel",
-    permissions: { ...noPermissions(), dashboard: true, prospects: true, partners: true, deliverables: true },
+    permissions: { ...noPermissions(), dashboard: true, prospects: true, partners: true },
   },
   {
     key: "sales",
@@ -28,7 +28,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
   {
     key: "technical",
     label: "Technical",
-    permissions: { ...noPermissions(), dashboard: true, partners: true, deliverables: true },
+    permissions: { ...noPermissions(), dashboard: true, partners: true },
   },
   {
     key: "legal",

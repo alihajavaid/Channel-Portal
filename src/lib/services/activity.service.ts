@@ -2,13 +2,21 @@ import "server-only";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
-type ActivityCategory =
+export type ActivityCategory =
   | "channel_account"
   | "customer"
-  | "deliverable"
   | "user"
   | "permission_change"
   | "export";
+export type ActivityCategoryFilter = ActivityCategory;
+
+export const ACTIVITY_CATEGORIES: ActivityCategory[] = [
+  "channel_account",
+  "customer",
+  "user",
+  "permission_change",
+  "export",
+];
 
 type LogInput = {
   actor: { id: string; name: string };
@@ -36,4 +44,34 @@ export async function getRecentActivity(limit = 20) {
     orderBy: { createdAt: "desc" },
     take: limit,
   });
+}
+
+export async function listActivity(filter: {
+  category?: ActivityCategory;
+  search?: string;
+  page: number;
+  pageSize: number;
+}) {
+  const where: Prisma.ActivityLogEntryWhereInput = {
+    category: filter.category,
+    ...(filter.search
+      ? {
+          OR: [
+            { message: { contains: filter.search } },
+            { actorName: { contains: filter.search } },
+          ],
+        }
+      : {}),
+  };
+
+  const [rows, total] = await Promise.all([
+    prisma.activityLogEntry.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (filter.page - 1) * filter.pageSize,
+      take: filter.pageSize,
+    }),
+    prisma.activityLogEntry.count({ where }),
+  ]);
+  return { rows, total };
 }

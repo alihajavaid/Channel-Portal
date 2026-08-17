@@ -34,7 +34,6 @@ enum CustomerStatus {
 enum ActivityCategory {
   channel_account
   customer
-  deliverable
   user
   permission_change
   export
@@ -50,7 +49,6 @@ model User {
   prospects              Boolean   @default(false)
   partners               Boolean   @default(false)
   customers              Boolean   @default(false)
-  deliverables           Boolean   @default(false)
   access                 Boolean   @default(false)
   mustChangePassword     Boolean   @default(false)
   tempPasswordExpiresAt  DateTime?
@@ -66,7 +64,6 @@ model User {
   mfaChallenges          MfaChallenge[]
   ownedChannelAccounts   ChannelAccount[] @relation("ChannelAccountOwner")
   ownedCustomers         Customer[]       @relation("CustomerCsmOwner")
-  ownedDeliverables      Deliverable[]    @relation("DeliverableOwner")
   uploadedDocuments      Document[]       @relation("DocumentUploadedBy")
 
   @@index([email])
@@ -146,31 +143,6 @@ model Customer {
   documents    Document[]
 
   @@index([csmOwnerId])
-}
-
-model Deliverable {
-  id         String            @id @default(cuid())
-  name       String
-  description String           @db.Text
-  ownerId    String
-  owner      User              @relation("DeliverableOwner", fields: [ownerId], references: [id])
-  link       String
-  createdAt  DateTime          @default(now())
-
-  tasks      DeliverableTask[]
-}
-
-model DeliverableTask {
-  id            String       @id @default(cuid())
-  deliverableId String
-  deliverable   Deliverable  @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
-  label         String
-  orderIndex    Int
-  done          Boolean      @default(false)
-  completedAt   DateTime?
-  completedById String?
-
-  @@index([deliverableId])
 }
 
 model Document {
